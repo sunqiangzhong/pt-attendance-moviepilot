@@ -28,9 +28,15 @@
 ## 安装
 
 1. 在浏览器中安装 [Tampermonkey](https://www.tampermonkey.net/)。
-2. 打开项目中的 `PT浏览器签到-MoviePilot通知版.js`。
-3. 将脚本内容复制到 Tampermonkey 的新脚本编辑器中并保存。
+2. [点击这里安装脚本](https://github.com/sunqiangzhong/pt-attendance-moviepilot/raw/refs/heads/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js)。
+3. Tampermonkey 打开安装页后，点击“安装”。
 4. 打开任意支持的 PT 站点，右侧将出现“PT 助手”面板。
+
+## 自动更新
+
+脚本已通过 `@updateURL` 和 `@downloadURL` 声明 GitHub Raw 地址。Tampermonkey 会按其更新设置定期检查新版本，也可以在 Tampermonkey 管理面板中手动点击“检查用户脚本更新”。
+
+发布新版本时，必须同时提高脚本头部的 `@version` 和代码中的 `VERSION`，否则 Tampermonkey 不会将远程脚本判定为新版本。
 
 ## MoviePilot 配置
 
