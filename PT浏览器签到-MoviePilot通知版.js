@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.4
+// @version      0.9.5
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.4'
+  const VERSION = '0.9.5'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -1703,6 +1703,10 @@
     return
   }
 
+  function hasAgent() {
+    return Boolean(site.requiresCaptcha && site.captcha?.useAI)
+  }
+
   function notifyMoviePilot(title, text) {
     const base = normalizeBaseUrl(CONFIG.moviePilot.baseUrl)
 
@@ -2981,6 +2985,9 @@
         value="${escapeHtml(CONFIG.moviePilot.baseUrl)}"
     />
 
+    ${
+      hasAgent()
+        ? `
     <label class="pt-label">
         Agent Path
     </label>
@@ -3015,6 +3022,9 @@
             🔄
         </button>
     </div>
+            `
+        : ''
+    }
 
     <label class="pt-label">
         API 令牌
@@ -3153,7 +3163,11 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
     CONFIG.moviePilot.baseUrl = document.getElementById('pt-mp-url').value.trim()
 
-    CONFIG.moviePilot.agentPath = document.getElementById('pt-agent-path').value.trim()
+    const agentPath = document.getElementById('pt-agent-path')
+
+    if (agentPath) {
+      CONFIG.moviePilot.agentPath = agentPath.value.trim()
+    }
 
     CONFIG.moviePilot.apiKey = document.getElementById('pt-mp-key').value.trim()
 
@@ -3551,8 +3565,12 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
   function bindEvents() {
     document.getElementById('pt-cron').addEventListener('input', updateCronDescription)
 
-    document.getElementById('pt-sync-mp-token').onclick = () => {
-      refreshAutomaticToken('mp')
+    const syncToken = document.getElementById('pt-sync-mp-token')
+
+    if (syncToken) {
+      syncToken.onclick = () => {
+        refreshAutomaticToken('mp')
+      }
     }
 
     document.getElementById('pt-save').onclick = async () => {
@@ -3881,9 +3899,11 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
     createPanel()
 
-    bindAutomaticTokenListeners()
+    if (hasAgent()) {
+      bindAutomaticTokenListeners()
+    }
 
-    if (!CONFIG.moviePilot.agentToken) {
+    if (hasAgent() && !CONFIG.moviePilot.agentToken) {
       await notifyCredentialIssue('MP Agent Token 未获取到', '未能从 MP 代理 localStorage.auth 自动取得 Token', true)
     }
 

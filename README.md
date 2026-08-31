@@ -2,7 +2,7 @@
 
 一个面向 Tampermonkey（油猴）的 PT 站点签到助手。脚本可在支持的 PT 站点页面中定时执行签到，通过 MoviePilot Agent 识别验证码，并在签到成功后调用 MoviePilot MsgNotify 发送通知。
 
-> 当前版本：`0.9.4`
+> 当前版本：`0.9.5`
 
 ## 主要功能
 
@@ -45,8 +45,14 @@
 在 PT 助手面板中填写：
 
 - **地址**：MoviePilot 服务地址，例如 `http://192.168.1.10:3000`。
-- **Agent Path**：默认为 `/api/v1/message/agent/stream`。
 - **API 令牌**：MoviePilot MsgNotify 插件使用的 API 令牌。
+
+只有当前站点需要 Agent 识别验证码时，面板才会额外显示：
+
+- **Agent Path**：默认为 `/api/v1/message/agent/stream`。
+- **Agent Bearer Token**：从 MoviePilot 登录状态自动同步。
+
+HHCLUB、HDDolby 等不需要 AI 识图的站点不会显示 Agent 配置，也不会触发 Agent Token 告警。
 
 Agent Bearer Token 由脚本从 MoviePilot 页面的登录状态自动同步。当前源码中的代理地址为：
 
