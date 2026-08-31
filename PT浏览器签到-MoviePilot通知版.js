@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.10
-// @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
+// @version      0.10.0
+// @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 / CHDBits Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 //
@@ -13,6 +13,7 @@
 // @match        https://open.cd/*
 // @match        https://www.open.cd/*
 // @match        https://u2.dmhy.org/*
+// @match        https://ptchdbits.co/*
 // @match        http://192.168.5.6:3000/*
 //
 // @grant        GM_getValue
@@ -37,7 +38,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.10'
+  const VERSION = '0.10.0'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -1011,6 +1012,121 @@
   }
 
   /************************************************************
+   * CHDBits
+   ************************************************************/
+
+  function getCHDForm() {
+    return document.querySelector('form[action$="/bakatest.php"], form[action="bakatest.php"]')
+  }
+
+  function getCHDSigninLink() {
+    return (
+      Array.from(document.querySelectorAll('a[href*="bakatest.php"]')).find(element =>
+        /\u6bcf\u65e5\u7b7e\u5230/.test(element.textContent || '')
+      ) || null
+    )
+  }
+
+  function getCHDChoices() {
+    return Array.from(getCHDForm()?.querySelectorAll('input[type="radio"][name="choice[]"]') || []).map(input => {
+      let label = ''
+
+      let node = input.nextSibling
+
+      while (node && node.nodeName !== 'BR') {
+        label += node.textContent || ''
+
+        node = node.nextSibling
+      }
+
+      return {
+        input,
+
+        label: label.replace(/\s+/g, ' ').trim()
+      }
+    })
+  }
+
+  function getCHDPrompt() {
+    const form = getCHDForm()
+
+    const question = form?.querySelector('tr td.text')?.textContent?.replace(/\s+/g, ' ').trim() || ''
+
+    const questionId = form?.querySelector('input[name="questionid"]')?.value?.trim() || ''
+
+    const choices = getCHDChoices()
+
+    if (!question || !choices.length) {
+      throw new Error('\u672a\u627e\u5230 CHDBits \u7b7e\u5230\u9898\u76ee\u6216\u9009\u9879')
+    }
+
+    return [
+      '\u8bf7\u56de\u7b54 CHDBits \u6bcf\u65e5\u7b7e\u5230\u5355\u9009\u9898\u3002',
+      questionId ? `\u9898\u76ee ID\uff1a${questionId}` : '',
+      `\u9898\u76ee\uff1a${question}`,
+      '\u53ea\u80fd\u4ece\u4ee5\u4e0b\u5019\u9009\u9879\u4e2d\u9009\u62e9\u4e00\u4e2a\uff0c\u5e76\u4e14\u53ea\u8f93\u51fa\u9009\u9879\u7684\u5b8c\u6574\u539f\u6587\uff0c\u4e0d\u8981\u89e3\u91ca\uff1a',
+      ...choices.map((choice, index) => `${index + 1}. ${choice.label}`)
+    ]
+      .filter(Boolean)
+      .join('\n')
+  }
+
+  function selectCHDChoice(text) {
+    const response = String(text || '')
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/["'`]/g, '')
+      .trim()
+
+    if (
+      !response ||
+      /\b(?:error|failed|failure|exception|traceback|429|quota)\b/i.test(response) ||
+      /(?:\u8c03\u7528\u5931\u8d25|\u8bf7\u6c42\u5931\u8d25|\u8bc6\u522b\u5931\u8d25|\u670d\u52a1\u5f02\u5e38)/.test(response)
+    ) {
+      return false
+    }
+
+    const choices = getCHDChoices()
+
+    const choice =
+      choices.find(item => response === item.label) ||
+      choices.find(item => item.label && response.includes(item.label)) ||
+      null
+
+    if (!choice) {
+      return false
+    }
+
+    choice.input.checked = true
+
+    choice.input.dispatchEvent(new Event('input', { bubbles: true }))
+    choice.input.dispatchEvent(new Event('change', { bubbles: true }))
+
+    return true
+  }
+
+  function getCHDResult() {
+    const text = document.body?.innerText?.replace(/\s+/g, ' ').trim() || ''
+
+    const success = text.match(/\u4eca\u5929\u5df2\u7ecf\u7b7e\u8fc7\u5230\u4e86\s*[\uff08(]\u5df2\u8fde\u7eed\s*(\d+)\s*\u5929\u7b7e\u5230[\uff09)]/)
+
+    if (!success) {
+      return null
+    }
+
+    const bonus = text.match(/(?:\u83b7\u5f97|\u5956\u52b1)\s*([\d.]+\s*\u9b54\u529b\u503c?)/)?.[1] || ''
+
+    return {
+      found: true,
+
+      checked: true,
+
+      status: `\u5df2\u8fde\u7eed${success[1]}\u5929\u7b7e\u5230`,
+
+      bonus
+    }
+  }
+
+  /************************************************************
    * Site Map
    ************************************************************/
 
@@ -1369,6 +1485,52 @@
 
         return modal
       }
+    },
+
+    'ptchdbits.co': {
+      id: 'chdbits',
+
+      name: 'CHDBits',
+
+      attendanceUrl: 'https://ptchdbits.co/bakatest.php',
+
+      detect() {
+        const result = getCHDResult()
+
+        if (result) {
+          return result
+        }
+
+        const form = getCHDForm()
+
+        if (form) {
+          return {
+            found: true,
+
+            checked: false,
+
+            status: '等待答题',
+
+            bonus: '',
+
+            element: form
+          }
+        }
+
+        const link = getCHDSigninLink()
+
+        return {
+          found: Boolean(link),
+
+          checked: false,
+
+          status: link ? '等待签到' : '未找到签到入口',
+
+          bonus: '',
+
+          element: link
+        }
+      }
     }
   }
 
@@ -1662,6 +1824,64 @@
     }
   }
 
+  function createCHDStrategy() {
+    const base = SITE_MAP['ptchdbits.co']
+
+    return {
+      ...base,
+
+      requiresCaptcha: false,
+
+      requiresAgent: true,
+
+      captcha: null,
+
+      answer: {
+        isReady() {
+          return Boolean(getCHDForm())
+        },
+
+        getPrompt() {
+          return getCHDPrompt()
+        },
+
+        select(text) {
+          return selectCHDChoice(text)
+        },
+
+        getSubmitBtn() {
+          return getCHDForm()?.querySelector('input[type="submit"][name="submit"]') || null
+        }
+      },
+
+      detectStatus() {
+        return base.detect()
+      },
+
+      async prepareSignin() {
+        if (!location.pathname.toLowerCase().endsWith('/bakatest.php')) {
+          const link = getCHDSigninLink()
+
+          if (link) {
+            link.click()
+          } else {
+            location.href = base.attendanceUrl
+          }
+
+          return
+        }
+
+        if (!getCHDForm() && !getCHDResult()) {
+          throw new Error('未找到 CHDBits 签到答题表单')
+        }
+      },
+
+      detectSuccess() {
+        return getCHDResult()
+      }
+    }
+  }
+
   const SITE_FACTORY_MAP = {
     'hhanclub.net': createHHClubStrategy,
 
@@ -1675,7 +1895,9 @@
 
     'open.cd': createOpenCDStrategy,
 
-    'www.open.cd': createOpenCDStrategy
+    'www.open.cd': createOpenCDStrategy,
+
+    'ptchdbits.co': createCHDStrategy
   }
 
   function validateSiteStrategy(strategy) {
@@ -1697,6 +1919,16 @@
       }
     }
 
+    if (strategy.answer) {
+      const requiredAnswerMethods = ['isReady', 'getPrompt', 'select', 'getSubmitBtn']
+
+      for (const method of requiredAnswerMethods) {
+        if (typeof strategy.answer[method] !== 'function') {
+          throw new Error(`[PT] ${strategy.name || strategy.id} 答题策略缺少 ${method}()`)
+        }
+      }
+    }
+
     return strategy
   }
 
@@ -1709,7 +1941,7 @@
   }
 
   function hasAgent() {
-    return Boolean(site.requiresCaptcha && site.captcha?.useAI)
+    return Boolean(site.requiresAgent || (site.requiresCaptcha && site.captcha?.useAI))
   }
 
   function notifyMoviePilot(title, text) {
@@ -1799,6 +2031,20 @@
     const notice = buildSigninNotice(outcome, result, error)
 
     await notifyMoviePilot(notice.title, notice.text)
+  }
+
+  async function notifySigninFailure(error) {
+    if (!getManualSignin()) {
+      return
+    }
+
+    clearManualSignin()
+
+    try {
+      await notifySigninResult(null, { error: error.message })
+    } catch (notifyError) {
+      console.error('[PT signin result notify]', notifyError)
+    }
   }
 
   async function notifyCredentialIssue(type, detail, affectsFlow) {
@@ -1959,9 +2205,11 @@
       const body = {
         session_id: sessionId,
 
-        text: prompt,
+        text: prompt
+      }
 
-        images: [imageUrl]
+      if (imageUrl) {
+        body.images = [imageUrl]
       }
 
       const headers = {
@@ -2072,6 +2320,40 @@
     }
 
     return true
+  }
+
+  async function runQuestionAnswer() {
+    if (!site.answer) {
+      throw new Error(`${site.name} 没有答题策略`)
+    }
+
+    await saveSettings(false)
+
+    await site.prepareSignin()
+
+    if (!site.answer.isReady()) {
+      throw new Error('签到答题页尚未准备完成')
+    }
+
+    const prompt = site.answer.getPrompt()
+
+    const response = await askMoviePilotAI('', prompt)
+
+    if (!site.answer.select(response.text)) {
+      throw new Error(`Agent 返回内容未匹配任一候选项：${response.text}`)
+    }
+
+    const submitBtn = site.answer.getSubmitBtn()
+
+    if (!submitBtn) {
+      throw new Error('未找到签到答题提交按钮')
+    }
+
+    setRunStatus('Agent 答题完成，正在提交', 'warning')
+
+    submitBtn.click()
+
+    return response
   }
 
   async function runCaptchaRecognition() {
@@ -3605,6 +3887,22 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
       setRunStatus('正在打开签到入口', 'warning')
 
+      if (site.answer) {
+        if (!site.answer.isReady()) {
+          sessionStorage.setItem(PENDING_ATTENDANCE_KEY, site.id)
+
+          await site.prepareSignin()
+
+          return
+        }
+
+        setRunStatus('正在调用 Agent 回答签到题目', 'warning')
+
+        await runQuestionAnswer()
+
+        return
+      }
+
       if (site.requiresCaptcha) {
         if (site.id === 'u2' && !location.pathname.toLowerCase().endsWith('/showup.php')) {
           sessionStorage.setItem(PENDING_ATTENDANCE_KEY, site.id)
@@ -3627,15 +3925,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
       await site.prepareSignin()
     } catch (error) {
-      if (getManualSignin()) {
-        clearManualSignin()
-
-        try {
-          await notifySigninResult(null, { error: error.message })
-        } catch (notifyError) {
-          console.error('[PT Manual signin result notify]', notifyError)
-        }
-      }
+      await notifySigninFailure(error)
 
       setRunStatus(`立即签到失败：${error.message}`, 'error')
 
@@ -3774,8 +4064,8 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
     }
   }
 
-  async function completePendingCaptchaAttendance() {
-    if (!site.requiresCaptcha || sessionStorage.getItem(PENDING_ATTENDANCE_KEY) !== site.id) {
+  async function completePendingAgentAttendance() {
+    if ((!site.requiresCaptcha && !site.answer) || sessionStorage.getItem(PENDING_ATTENDANCE_KEY) !== site.id) {
       return false
     }
 
@@ -3788,9 +4078,15 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
         return true
       }
 
-      setRunStatus(`正在识别 ${site.name} 签到验证码`, 'warning')
+      if (site.answer) {
+        setRunStatus(`正在回答 ${site.name} 签到题目`, 'warning')
 
-      await runCaptchaRecognition()
+        await runQuestionAnswer()
+      } else {
+        setRunStatus(`正在识别 ${site.name} 签到验证码`, 'warning')
+
+        await runCaptchaRecognition()
+      }
 
       return true
     } finally {
@@ -3932,14 +4228,18 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
     watchOpenCDSuccessState()
 
-    await completePendingHHClubAttendance().catch(error => {
+    await completePendingHHClubAttendance().catch(async error => {
       console.error('[PT HHCLUB signin]', error)
+
+      await notifySigninFailure(error)
 
       setRunStatus('HHCLUB 签到失败', 'error')
     })
 
-    await completePendingCaptchaAttendance().catch(error => {
-      console.error(`[PT ${site.name} captcha signin]`, error)
+    await completePendingAgentAttendance().catch(async error => {
+      console.error(`[PT ${site.name} Agent signin]`, error)
+
+      await notifySigninFailure(error)
 
       setRunStatus(`${site.name} 签到失败`, 'error')
     })

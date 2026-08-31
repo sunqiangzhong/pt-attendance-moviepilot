@@ -1,14 +1,15 @@
 # PT 自动签到 · MoviePilot AI
 
-一个面向 Tampermonkey（油猴）的 PT 站点签到助手。脚本可在支持的 PT 站点页面中定时执行签到，通过 MoviePilot Agent 识别验证码，并在签到成功后调用 MoviePilot MsgNotify 发送通知。
+一个面向 Tampermonkey（油猴）的 PT 站点签到助手。脚本可在支持的 PT 站点页面中定时执行签到，通过 MoviePilot Agent 识别验证码或回答签到题目，并在签到成功后调用 MoviePilot MsgNotify 发送通知。
 
-> 当前版本：`0.9.10`
+> 当前版本：`0.10.0`
 
 ## 主要功能
 
 - 支持多个 PT 站点的签到状态检测与自动签到。
 - 支持标准五段 Cron 表达式。
 - 使用 MoviePilot Agent 识别字符验证码和 U2 选择题验证码。
+- 使用 MoviePilot Agent 回答 CHDBits 每日签到单选题。
 - 签到成功后通过 MoviePilot MsgNotify 插件发送通知。
 - 在页面中显示可折叠、可拖动的 PT 助手面板。
 - 显示当日签到状态、奖励、下次执行时间和倒计时。
@@ -26,6 +27,7 @@
 | HDSky | 支持 | 支持 |
 | OpenCD（皇后） | 支持 | 支持 |
 | U2 | 支持 | 支持选择题验证码 |
+| CHDBits | 支持 | Agent 文本单选题 |
 
 ## 安装
 
