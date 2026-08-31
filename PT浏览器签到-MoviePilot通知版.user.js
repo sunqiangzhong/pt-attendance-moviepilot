@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.10.2
+// @version      0.10.3
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 / CHDBits Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.user.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.user.js
 //
 // @match        https://hhanclub.net/*
 // @match        https://www.hddolby.com/*
+// @match        https://hddolby.com/*
 // @match        https://hdsky.me/*
 // @match        https://www.hdsky.me/*
 // @match        https://open.cd/*
@@ -38,7 +39,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.10.2'
+  const VERSION = '0.10.3'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -1887,6 +1888,8 @@
 
     'www.hddolby.com': createHDDolbyStrategy,
 
+    'hddolby.com': createHDDolbyStrategy,
+
     'u2.dmhy.org': createU2Strategy,
 
     'hdsky.me': createHDSkyStrategy,
@@ -3191,7 +3194,7 @@
         </div>
 
         <div class="pt-version">
-            v${VERSION} · 自动更新测试
+            v${VERSION}
         </div>
 
         </div>
@@ -4160,7 +4163,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
    * Scheduler
    ************************************************************/
 
-  async function schedulerTick() {
+  async function checkScheduler() {
     const now = Date.now()
 
     /*
@@ -4178,10 +4181,14 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
       return
     }
 
-    let last = await gmGet(schedulerCheckKey, now)
+    /*
+     * 首次检查要包含当前分钟。否则页面刚好在 Cron 分钟内完成初始化时，
+     * 该次执行会被永久跳过。
+     */
+    let last = await gmGet(schedulerCheckKey, now - 60000)
 
     if (typeof last !== 'number') {
-      last = now
+      last = now - 60000
     }
 
     await gmSet(schedulerCheckKey, now)
@@ -4200,7 +4207,44 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
     await gmSet(triggerStorageKey, triggerKey)
 
+    setRunStatus(`Cron 已触发：${formatDateTime(occurrence)}`, 'warning')
+
     await runSignin()
+  }
+
+  let isSchedulerRunning = false
+
+  async function schedulerTick() {
+    if (isSchedulerRunning) {
+      return
+    }
+
+    isSchedulerRunning = true
+
+    try {
+      await checkScheduler()
+    } finally {
+      isSchedulerRunning = false
+    }
+  }
+
+  function runScheduler() {
+    schedulerTick().catch(error => console.error('[PT scheduler]', error))
+  }
+
+  function startScheduler() {
+    runScheduler()
+
+    setInterval(runScheduler, SCHEDULER_INTERVAL)
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        runScheduler()
+      }
+    })
+
+    window.addEventListener('focus', runScheduler)
+    window.addEventListener('pageshow', runScheduler)
   }
 
   /************************************************************
@@ -4213,6 +4257,8 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
     injectStyle()
 
     createPanel()
+
+    startScheduler()
 
     if (hasAgent()) {
       bindAutomaticTokenListeners()
@@ -4250,17 +4296,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
     setInterval(updateNextRun, 1000)
 
-    setInterval(
-      () => {
-        schedulerTick().catch(error => console.error('[PT scheduler]', error))
-      },
-
-      SCHEDULER_INTERVAL
-    )
-
-    schedulerTick().catch(error => console.error('[PT scheduler]', error))
   }
 
   init().catch(error => console.error('[PT init]', error))
-  console.log(23)
 })()
