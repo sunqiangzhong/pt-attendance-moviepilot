@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.5
+// @version      0.9.6
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.5'
+  const VERSION = '0.9.6'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -1627,7 +1627,11 @@
         getConfirmBtn() {
           const input = getOpenCDCaptchaInput()
 
-          return input?.parentElement?.querySelector('button#ok') || null
+          return (
+            input
+              ?.closest('form')
+              ?.querySelector('button#ok, input#ok, button[type="submit"], input[type="submit"]') || null
+          )
         }
       },
 
@@ -3612,9 +3616,9 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
         setRunStatus('正在打开签到入口', 'warning')
 
         if (site.requiresCaptcha) {
-          await site.prepareSignin()
+          setRunStatus('正在识别签到验证码', 'warning')
 
-          setRunStatus('签到验证码已打开', 'warning')
+          await runCaptchaRecognition()
 
           return
         }
