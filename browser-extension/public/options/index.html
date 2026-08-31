@@ -14,48 +14,16 @@
         <h1>PT 签到助手</h1>
         <p class="lead">浏览器保持运行，签到页由扩展自动打开。</p>
       </div>
-      <div class="version">EXT / 0.1.1</div>
+      <div class="version">EXT / 0.2.0</div>
     </header>
 
     <section class="grid">
-      <article class="card site-card">
-        <div class="card-head">
-          <div>
-            <span class="tag">SITE 01</span>
-            <h2>HDDolby</h2>
-          </div>
-          <label class="switch">
-            <input id="site-enabled" type="checkbox">
-            <span></span>
-          </label>
-        </div>
-
-        <label class="field">
-          <span>Cron 计划</span>
-          <input id="site-cron" value="0 8 * * *" spellcheck="false">
-          <small>分 时 日 月 周，例如每天 08:00：0 8 * * *</small>
-        </label>
-
-        <div class="readout">
-          <span>下次执行</span>
-          <strong id="next-run">--</strong>
-        </div>
-
-        <div class="result" id="site-result" data-state="idle">
-          <span class="lamp"></span>
-          <div>
-            <small>最近结果</small>
-            <strong id="result-text">暂无执行记录</strong>
-          </div>
-        </div>
-
-        <button class="btn ghost" id="run-site" type="button">立即签到</button>
-      </article>
+      <div id="site-list" class="site-list"></div>
 
       <article class="card notify-card">
         <div class="card-head">
           <div>
-            <span class="tag">NOTIFY</span>
+            <span class="tag">AGENT / NOTIFY</span>
             <h2>MoviePilot</h2>
           </div>
           <label class="switch">
@@ -70,11 +38,21 @@
         </label>
 
         <label class="field">
-          <span>API 令牌</span>
+          <span>MsgNotify API 令牌</span>
           <input id="mp-key" type="password" autocomplete="off">
         </label>
 
-        <p class="note">通知只在签到完成或失败后发送，不发送“已开始”通知。</p>
+        <label class="field">
+          <span>Agent Path</span>
+          <input id="agent-path" value="/api/v1/message/agent/stream">
+        </label>
+
+        <label class="field">
+          <span>Agent Bearer Token</span>
+          <input id="agent-token" type="password" autocomplete="off">
+        </label>
+
+        <p class="note">开关只控制结果通知。Agent 配置供 HDSky、OpenCD、U2 和 CHDBits 使用。</p>
       </article>
     </section>
 

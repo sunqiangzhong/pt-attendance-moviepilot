@@ -7,6 +7,73 @@ const ALARM_NAME = 'pt-scheduler'
 const TASK_TTL = 10 * 60 * 1000
 const DEV_RELOAD_KEY = 'devReloadPending'
 
+function getAgentText(value) {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.map(getAgentText).filter(Boolean).join('')
+  if (typeof value !== 'object') return ''
+
+  for (const key of ['delta', 'text', 'content', 'message', 'answer', 'output', 'data', 'result', 'event']) {
+    const text = getAgentText(value[key])
+    if (text) return text
+  }
+  return ''
+}
+
+function parseAgent(raw) {
+  const source = String(raw || '').trim()
+  if (!source) throw new Error('MoviePilot Agent 返回为空')
+
+  if (!source.includes('data:')) {
+    try {
+      return getAgentText(JSON.parse(source)) || source
+    } catch {
+      return source
+    }
+  }
+
+  const chunks = []
+  for (const line of source.split(/\r?\n/)) {
+    const data = line.trim()
+    if (!data.startsWith('data:')) continue
+    const payload = data.slice(5).trim()
+    if (!payload || payload === '[DONE]') continue
+    try {
+      const text = getAgentText(JSON.parse(payload))
+      if (text && chunks.at(-1) !== text) chunks.push(text)
+    } catch {
+      if (chunks.at(-1) !== payload) chunks.push(payload)
+    }
+  }
+  return chunks.join('')
+}
+
+async function askAgent(siteId, imageUrl, prompt) {
+  const config = await loadConfig()
+  const mp = config.moviePilot
+  const base = mp.baseUrl.trim().replace(/\/+$/, '')
+  if (!base) throw new Error('MoviePilot 地址为空')
+
+  const path = `/${String(mp.agentPath || '/api/v1/message/agent/stream').replace(/^\/+/, '')}`
+  const headers = { 'Content-Type': 'application/json', Accept: 'text/event-stream' }
+  if (mp.agentToken.trim()) headers.Authorization = `Bearer ${mp.agentToken.trim()}`
+
+  const body = {
+    session_id: `pt-extension-${siteId}-${Date.now().toString(36)}`,
+    text: prompt
+  }
+  if (imageUrl) body.images = [imageUrl]
+
+  const response = await fetch(`${base}${path}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body)
+  })
+  const raw = await response.text()
+  if (!response.ok) throw new Error(`MoviePilot Agent HTTP ${response.status}\n${raw}`)
+  return parseAgent(raw)
+}
+
 async function getStore(key, fallback) {
   const data = await chrome.storage.local.get(key)
   return data[key] ?? fallback
@@ -123,6 +190,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return
     }
 
+    if (message.type === 'ASK_AGENT') {
+      const text = await askAgent(message.siteId, message.imageUrl, message.prompt)
+      sendResponse({ ok: true, text })
+      return
+    }
+
     if (message.type === 'GET_STATE') {
       sendResponse({ config: await loadConfig(), results: await getStore('results', {}) })
       return
@@ -139,6 +212,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.type === 'SITE_STEP') {
       if (message.step === 'reload') task.reloads = (task.reloads || 0) + 1
+      task.steps = (task.steps || 0) + 1
+      task.stage = message.step
       task.tabId = sender.tab?.id
       await setStore('tasks', tasks)
       sendResponse(task)

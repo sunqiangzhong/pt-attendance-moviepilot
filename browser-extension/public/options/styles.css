@@ -35,6 +35,8 @@ h1 { margin: 8px 0 6px; font: 700 clamp(34px, 6vw, 68px)/.95 "STZhongsong", seri
 .version { border: 1px solid var(--line); padding: 10px 13px; color: var(--muted); font: 12px Consolas, monospace; }
 
 .grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 20px; }
+.site-list { display: grid; gap: 20px; }
+.notify-card { position: sticky; top: 24px; align-self: start; }
 .card { position: relative; padding: 28px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 30px 80px rgba(0,0,0,.28); backdrop-filter: blur(12px); }
 .card::before { content: ""; position: absolute; inset: -1px auto auto -1px; width: 52px; height: 3px; background: var(--amber); }
 .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
@@ -42,8 +44,9 @@ h2 { margin: 6px 0 0; font-size: 24px; }
 
 .field { display: grid; gap: 8px; margin: 18px 0; color: #bdc8d0; font-size: 13px; }
 .field small, .note { color: var(--muted); font-size: 12px; line-height: 1.7; }
-input { width: 100%; border: 1px solid var(--line); border-radius: 0; outline: none; padding: 13px 14px; color: var(--ink); background: #091115; font: 14px Consolas, monospace; transition: border-color .2s, box-shadow .2s; }
-input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255,176,0,.1); }
+input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 0; outline: none; padding: 13px 14px; color: var(--ink); background: #091115; font: 14px Consolas, monospace; transition: border-color .2s, box-shadow .2s; }
+textarea { min-height: 82px; resize: vertical; line-height: 1.55; }
+input:focus, textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255,176,0,.1); }
 
 .switch input { display: none; }
 .switch span { display: block; width: 46px; height: 24px; padding: 3px; border: 1px solid var(--line); background: #080d10; cursor: pointer; }

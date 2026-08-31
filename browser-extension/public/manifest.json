@@ -1,12 +1,19 @@
 {
   "manifest_version": 3,
   "name": "PT 签到助手",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "按 Cron 计划打开 PT 站点并执行签到。",
   "permissions": ["alarms", "storage", "tabs"],
   "host_permissions": [
     "https://www.hddolby.com/*",
     "https://hddolby.com/*",
+    "https://hhanclub.net/*",
+    "https://hdsky.me/*",
+    "https://www.hdsky.me/*",
+    "https://open.cd/*",
+    "https://www.open.cd/*",
+    "https://u2.dmhy.org/*",
+    "https://ptchdbits.co/*",
     "http://*/*",
     "https://*/*"
   ],
@@ -15,7 +22,17 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.hddolby.com/*", "https://hddolby.com/*"],
+      "matches": [
+        "https://www.hddolby.com/*",
+        "https://hddolby.com/*",
+        "https://hhanclub.net/*",
+        "https://hdsky.me/*",
+        "https://www.hdsky.me/*",
+        "https://open.cd/*",
+        "https://www.open.cd/*",
+        "https://u2.dmhy.org/*",
+        "https://ptchdbits.co/*"
+      ],
       "js": ["content/runner.js"],
       "run_at": "document_idle"
     }

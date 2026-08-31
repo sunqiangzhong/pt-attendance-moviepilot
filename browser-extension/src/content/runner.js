@@ -9,12 +9,20 @@ import { watchReload } from '../shared/reload.js'
     return chrome.runtime.sendMessage({ type, siteId: adapter.id, ...data })
   }
 
+  const ctx = {
+    async askAgent(imageUrl, prompt) {
+      const response = await report('ASK_AGENT', { imageUrl, prompt })
+      if (!response?.ok) throw new Error(response?.error || 'MoviePilot Agent 请求失败')
+      return response.text
+    }
+  }
+
   async function run() {
     const task = await report('SITE_READY')
     if (!task || task.state !== 'pending') return
 
     try {
-      const step = adapter.run(task)
+      const step = await adapter.run(task, ctx)
 
       if (step.action === 'success') {
         await report('SITE_SUCCESS', { result: step.result })
@@ -30,6 +38,12 @@ import { watchReload } from '../shared/reload.js'
       if (step.action === 'reload') {
         await report('SITE_STEP', { step: 'reload' })
         location.reload()
+        return
+      }
+
+      if (step.action === 'wait') {
+        await report('SITE_STEP', { step: step.step || 'wait' })
+        setTimeout(run, step.delay || 1200)
         return
       }
 

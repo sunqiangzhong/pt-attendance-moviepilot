@@ -1,6 +1,28 @@
 export const defaultConfig = {
   sites: {
+    hhclub: {
+      enabled: true,
+      cron: '0 8 * * *'
+    },
     hddolby: {
+      enabled: true,
+      cron: '0 8 * * *'
+    },
+    hdsky: {
+      enabled: true,
+      cron: '0 8 * * *',
+      prompt: '识别图片中的字母和数字验证码，只返回验证码，不要解释。'
+    },
+    opencd: {
+      enabled: true,
+      cron: '0 8 * * *',
+      prompt: '识别图片中的字母和数字验证码，只返回验证码，不要解释。'
+    },
+    u2: {
+      enabled: true,
+      cron: '0 8 * * *'
+    },
+    chdbits: {
       enabled: true,
       cron: '0 8 * * *'
     }
@@ -8,7 +30,9 @@ export const defaultConfig = {
   moviePilot: {
     enabled: false,
     baseUrl: '',
-    apiKey: ''
+    apiKey: '',
+    agentPath: '/api/v1/message/agent/stream',
+    agentToken: ''
   }
 }
 

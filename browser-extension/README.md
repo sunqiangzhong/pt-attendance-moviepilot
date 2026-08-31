@@ -1,6 +1,6 @@
 # PT 签到助手（浏览器扩展）
 
-这是从 Tampermonkey 脚本逐步迁移的 Manifest V3 浏览器扩展。当前首个可用站点是 HDDolby。
+这是从 Tampermonkey 脚本迁移的 Manifest V3 浏览器扩展。当前版本为 `0.2.0`。
 
 ## 构建
 
@@ -39,10 +39,22 @@ pnpm run dev
 ## 当前能力
 
 - 每分钟由扩展后台检查五段 Cron。
-- Cron 到期后自动打开或复用 HDDolby 页面。
+- Cron 到期后自动打开或复用对应站点页面。
 - 页面跳转后继续同一个签到任务。
 - 记录最近的执行状态。
 - 可选的 MoviePilot 执行结果通知。
+- 通过 MoviePilot Agent 识别验证码或回答签到题目。
+
+## 支持站点
+
+| 站点 | 签到方式 |
+| --- | --- |
+| HHCLUB | 日历签到按钮 |
+| HDDolby | 签到页跳转 |
+| HDSky | Agent 识别字符验证码 |
+| OpenCD（皇后） | Agent 识别 iframe 字符验证码 |
+| U2 | Agent 识别图片并选择候选作品 |
+| CHDBits | Agent 回答每日单选题 |
 
 ## 站点接入
 
