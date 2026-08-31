@@ -1,5 +1,6 @@
-(async () => {
-  const { adapters } = await import(chrome.runtime.getURL('sites/index.js'))
+import { adapters } from '../sites/index.js'
+
+;(() => {
   const adapter = Object.values(adapters).find(item => item.hosts.includes(location.hostname))
   if (!adapter) return
 
@@ -37,5 +38,5 @@
     }
   }
 
-  run()
-})().catch(error => console.error('[PT Extension]', error))
+  run().catch(error => console.error('[PT Extension]', error))
+})()

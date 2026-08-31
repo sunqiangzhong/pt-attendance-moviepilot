@@ -11,20 +11,13 @@
     "https://*/*"
   ],
   "background": {
-    "service_worker": "background/service.js",
-    "type": "module"
+    "service_worker": "background/service.js"
   },
   "content_scripts": [
     {
       "matches": ["https://www.hddolby.com/*", "https://hddolby.com/*"],
       "js": ["content/runner.js"],
       "run_at": "document_idle"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["sites/*.js"],
-      "matches": ["https://www.hddolby.com/*", "https://hddolby.com/*"]
     }
   ],
   "action": {
