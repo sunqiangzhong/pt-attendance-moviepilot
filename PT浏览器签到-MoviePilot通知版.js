@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.6
+// @version      0.9.7
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.6'
+  const VERSION = '0.9.7'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -60,6 +60,8 @@
   const OPENCD_PENDING_REFRESH_KEY = 'pt_attendance_opencd_pending_refresh'
 
   const PENDING_ATTENDANCE_KEY = 'pt_attendance_pending_signin'
+
+  const MANUAL_SIGNIN_KEY = 'pt_attendance_manual_signin_v1'
 
   const PANEL_ICON_POSITION_KEY = 'pt_attendance_panel_icon_position_v1'
 
@@ -1745,17 +1747,47 @@
     })
   }
 
-  async function notifyManualSignin(result) {
-    const checked = Boolean(result?.checked)
+  function setManualSignin() {
+    sessionStorage.setItem(
+      MANUAL_SIGNIN_KEY,
+      JSON.stringify({
+        site: site.id,
+
+        startedAt: Date.now()
+      })
+    )
+  }
+
+  function getManualSignin() {
+    const pending = parseJsonSafe(sessionStorage.getItem(MANUAL_SIGNIN_KEY), null)
+
+    if (!pending || pending.site !== site.id || Date.now() - pending.startedAt > 10 * 60 * 1000) {
+      sessionStorage.removeItem(MANUAL_SIGNIN_KEY)
+
+      return null
+    }
+
+    return pending
+  }
+
+  function clearManualSignin() {
+    sessionStorage.removeItem(MANUAL_SIGNIN_KEY)
+  }
+
+  async function notifySigninResult(result, { completed = false, error = '' } = {}) {
+    const outcome = error ? '签到失败' : completed ? '签到成功' : '已签到，无需重复签到'
 
     await notifyMoviePilot(
-      `📅 ${site.name} 立即签到`,
+      `${error ? '❌' : '✅'} ${site.name} 立即签到结果`,
       [
         `站点：${site.name}`,
-        `当前状态：${checked ? '已签到' : '未签到'}`,
-        checked ? '处理：无需重复签到' : '处理：已开始执行立即签到',
+        `执行结果：${outcome}`,
+        result?.bonus ? `奖励：${result.bonus}` : '',
+        error ? `错误：${error}` : '',
         `时间：${formatDateTime(Date.now())}`
-      ].join('\n')
+      ]
+        .filter(Boolean)
+        .join('\n')
     )
   }
 
@@ -3593,25 +3625,15 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
         updateAttendanceUI(result)
 
-        let notified = false
-
-        try {
-          await notifyManualSignin(result)
-
-          notified = true
-        } catch (error) {
-          console.error('[PT Manual signin notify]', error)
-
-          setRunStatus(`立即签到通知失败：${error.message}`, 'error')
-
-          alert(`立即签到通知失败：${error.message}\n将继续执行签到。`)
-        }
-
         if (result.checked) {
-          setRunStatus(notified ? '已签到，状态通知已发送' : '已签到，但状态通知失败', notified ? 'success' : 'error')
+          await notifySigninResult(result)
+
+          setRunStatus('已签到，执行结果通知已发送')
 
           return
         }
+
+        setManualSignin()
 
         setRunStatus('正在打开签到入口', 'warning')
 
@@ -3629,6 +3651,16 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
         await site.prepareSignin()
       } catch (error) {
+        if (getManualSignin()) {
+          clearManualSignin()
+
+          try {
+            await notifySigninResult(null, { error: error.message })
+          } catch (notifyError) {
+            console.error('[PT Manual signin result notify]', notifyError)
+          }
+        }
+
         setRunStatus(`立即签到失败：${error.message}`, 'error')
 
         alert(`立即签到失败：${error.message}`)
@@ -3809,6 +3841,22 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
     await cacheAttendanceSuccess(result)
 
     const key = LAST_NOTIFY_PREFIX + site.id
+
+    if (getManualSignin()) {
+      try {
+        await notifySigninResult(result, { completed: true })
+
+        await gmSet(key, getTodayKey())
+
+        setRunStatus('签到成功，执行结果通知已发送')
+      } catch (error) {
+        console.error('[PT Manual signin result notify]', error)
+
+        setRunStatus(`签到成功，但执行结果通知失败：${error.message}`, 'error')
+      } finally {
+        clearManualSignin()
+      }
+    }
 
     if ((await gmGet(key, '')) === getTodayKey()) {
       return
