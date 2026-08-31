@@ -2,7 +2,7 @@
 
 一个面向 Tampermonkey（油猴）的 PT 站点签到助手。脚本可在支持的 PT 站点页面中定时执行签到，通过 MoviePilot Agent 识别验证码，并在签到成功后调用 MoviePilot MsgNotify 发送通知。
 
-> 当前版本：`0.9.3`
+> 当前版本：`0.9.4`
 
 ## 主要功能
 
@@ -46,7 +46,7 @@
 
 - **地址**：MoviePilot 服务地址，例如 `http://192.168.1.10:3000`。
 - **Agent Path**：默认为 `/api/v1/message/agent/stream`。
-- **MsgNotify API Key**：MoviePilot MsgNotify 插件使用的 API Key。
+- **API 令牌**：MoviePilot MsgNotify 插件使用的 API 令牌。
 
 Agent Bearer Token 由脚本从 MoviePilot 页面的登录状态自动同步。当前源码中的代理地址为：
 
@@ -107,7 +107,7 @@ Cron 到期
 
 ### 签到成功但没有通知
 
-- 点击“立即签到”检查 MoviePilot 地址和 MsgNotify API Key，每次点击都会尝试发送状态通知。
+- 点击“立即签到”检查 MoviePilot 地址和 API 令牌，每次点击都会尝试发送状态通知。
 - 确认 MoviePilot MsgNotify 插件已启用。
 - 查看面板是否显示 MoviePilot 通知失败的具体原因。
 
