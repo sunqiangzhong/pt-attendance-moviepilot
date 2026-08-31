@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.1
+// @version      0.9.2
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.1'
+  const VERSION = '0.9.2'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -1719,6 +1719,20 @@
     })
   }
 
+  async function notifyManualSignin(result) {
+    const checked = Boolean(result?.checked)
+
+    await notifyMoviePilot(
+      `📅 ${site.name} 立即签到`,
+      [
+        `站点：${site.name}`,
+        `当前状态：${checked ? '已签到' : '未签到'}`,
+        checked ? '处理：无需重复签到' : '处理：已开始执行立即签到',
+        `时间：${formatDateTime(Date.now())}`
+      ].join('\n')
+    )
+  }
+
   async function notifyCredentialIssue(type, detail, affectsFlow) {
     const warningKey = `${LAST_CREDENTIAL_WARNING_PREFIX}${type}_${getTodayKey()}`
 
@@ -3008,13 +3022,6 @@
     </button>
 
     <button
-        id="pt-test-notify"
-        class="pt-btn"
-    >
-        🔔 测试通知
-    </button>
-
-    <button
         id="pt-sign-now"
         class="pt-btn pt-primary"
     >
@@ -3538,59 +3545,30 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
       }
     }
 
-    document.getElementById('pt-test-notify').onclick = async event => {
-      const button = event.currentTarget
-
+    document.getElementById('pt-sign-now').onclick = async () => {
       try {
-        button.disabled = true
-
-        button.textContent = '🔔 发送中...'
-
         await saveSettings(false)
 
         const result = await applyAttendanceCache(site.detectStatus())
 
         updateAttendanceUI(result)
 
-        const sent = await notifyMoviePilot(
-          `📅 ${site.name} 签到状态`,
-          [
-            `站点：${site.name}`,
-            `签到：${result.checked ? '已签到' : '未签到'}`,
-            `状态：${result.status || '-'}`,
-            result.bonus ? `奖励：${result.bonus}` : '',
-            `时间：${formatDateTime(Date.now())}`
-          ]
-            .filter(Boolean)
-            .join('\n')
-        )
+        let notified = false
 
-        if (!sent) {
-          throw new Error('MoviePilot 通知未启用')
+        try {
+          await notifyManualSignin(result)
+
+          notified = true
+        } catch (error) {
+          console.error('[PT Manual signin notify]', error)
+
+          setRunStatus(`立即签到通知失败：${error.message}`, 'error')
+
+          alert(`立即签到通知失败：${error.message}\n将继续执行签到。`)
         }
 
-        setRunStatus('测试通知已发送')
-      } catch (error) {
-        console.error('[PT Test Notify]', error)
-
-        setRunStatus('测试通知失败', 'error')
-
-        alert(`测试通知失败：${error.message}`)
-      } finally {
-        button.disabled = false
-
-        button.textContent = '🔔 测试通知'
-      }
-    }
-
-    document.getElementById('pt-sign-now').onclick = async () => {
-      try {
-        const result = site.detectStatus()
-
-        updateAttendanceUI(result)
-
         if (result.checked) {
-          setRunStatus('今日已签到')
+          setRunStatus(notified ? '已签到，状态通知已发送' : '已签到，但状态通知失败', notified ? 'success' : 'error')
 
           return
         }

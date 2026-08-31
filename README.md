@@ -2,7 +2,7 @@
 
 一个面向 Tampermonkey（油猴）的 PT 站点签到助手。脚本可在支持的 PT 站点页面中定时执行签到，通过 MoviePilot Agent 识别验证码，并在签到成功后调用 MoviePilot MsgNotify 发送通知。
 
-> 当前版本：`0.9.1`
+> 当前版本：`0.9.2`
 
 ## 主要功能
 
@@ -12,7 +12,8 @@
 - 签到成功后通过 MoviePilot MsgNotify 插件发送通知。
 - 在页面中显示可折叠、可拖动的 PT 助手面板。
 - 显示当日签到状态、奖励、下次执行时间和倒计时。
-- 支持手动立即签到、验证码识别、通知测试和 Prompt 自定义。
+- 支持手动立即签到、验证码识别和 Prompt 自定义。
+- 每次点击“立即签到”都会通知当前的已签到或未签到状态。
 - 对当日签到成功状态和通知进行缓存及去重。
 
 ## 支持的站点
@@ -105,7 +106,7 @@ Cron 到期
 
 ### 签到成功但没有通知
 
-- 使用“测试通知”检查 MoviePilot 地址和 MsgNotify API Key。
+- 点击“立即签到”检查 MoviePilot 地址和 MsgNotify API Key，每次点击都会尝试发送状态通知。
 - 确认 MoviePilot MsgNotify 插件已启用。
 - 查看面板是否显示 MoviePilot 通知失败的具体原因。
 
