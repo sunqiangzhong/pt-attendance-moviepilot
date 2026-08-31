@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.9
+// @version      0.9.10
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.9'
+  const VERSION = '0.9.10'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -1773,21 +1773,32 @@
     sessionStorage.removeItem(MANUAL_SIGNIN_KEY)
   }
 
+  function buildSigninNotice(status, result, error = '') {
+    const titleStatus = status.startsWith('已签到') ? '已签到' : status
+
+    const lines = ['📢 执行结果', '', `🕐 时间：${formatDateTime(Date.now())}`, `✨ 状态：${status}`]
+
+    if (result?.bonus) {
+      lines.push(`🎁 获得: ${result.bonus}`)
+    }
+
+    if (error) {
+      lines.push(`⚠️ 原因：${error}`)
+    }
+
+    return {
+      title: `【${error ? '❌' : '✅'}  ${site.name}${titleStatus}】`,
+
+      text: lines.join('\n')
+    }
+  }
+
   async function notifySigninResult(result, { completed = false, error = '' } = {}) {
     const outcome = error ? '签到失败' : completed ? '签到成功' : '已签到，无需重复签到'
 
-    await notifyMoviePilot(
-      `${error ? '❌' : '✅'} ${site.name} 立即签到结果`,
-      [
-        `站点：${site.name}`,
-        `执行结果：${outcome}`,
-        result?.bonus ? `奖励：${result.bonus}` : '',
-        error ? `错误：${error}` : '',
-        `时间：${formatDateTime(Date.now())}`
-      ]
-        .filter(Boolean)
-        .join('\n')
-    )
+    const notice = buildSigninNotice(outcome, result, error)
+
+    await notifyMoviePilot(notice.title, notice.text)
   }
 
   async function notifyCredentialIssue(type, detail, affectsFlow) {
@@ -3837,19 +3848,9 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
     }
 
     try {
-      await notifyMoviePilot(
-        `✅ ${site.name} 签到成功`,
+      const notice = buildSigninNotice('签到成功', result)
 
-        [
-          `${site.name} 今日签到完成`,
-          `时间：${formatDateTime(Date.now())}`,
-          `状态：${result.status}`,
-
-          result.bonus ? `奖励：${result.bonus}` : ''
-        ]
-          .filter(Boolean)
-          .join('\n')
-      )
+      await notifyMoviePilot(notice.title, notice.text)
 
       await gmSet(key, getTodayKey())
     } catch (error) {
