@@ -2,7 +2,7 @@
 
 一个面向 Tampermonkey（油猴）的 PT 站点签到助手。脚本可在支持的 PT 站点页面中定时执行签到，通过 MoviePilot Agent 识别验证码，并在签到成功后调用 MoviePilot MsgNotify 发送通知。
 
-> 当前版本：`4.3.5`
+> 当前版本：`0.9`
 
 ## 主要功能
 

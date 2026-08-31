@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      4.3.5
+// @version      0.9
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 //
 // @match        https://hhanclub.net/*
@@ -35,7 +35,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '4.3.5'
+  const VERSION = '0.9'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
