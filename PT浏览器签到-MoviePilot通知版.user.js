@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.10.1
+// @version      0.10.2
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 / CHDBits Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.user.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.user.js
@@ -38,7 +38,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.10.1'
+  const VERSION = '0.10.2'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -3191,7 +3191,7 @@
         </div>
 
         <div class="pt-version">
-            v${VERSION}
+            v${VERSION} · 自动更新测试
         </div>
 
         </div>
