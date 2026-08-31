@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.8
+// @version      0.9.9
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.8'
+  const VERSION = '0.9.9'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -3574,6 +3574,64 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
    * Events
    ************************************************************/
 
+  async function runSignin() {
+    try {
+      await saveSettings(false)
+
+      const result = await applyAttendanceCache(site.detectStatus())
+
+      updateAttendanceUI(result)
+
+      if (result.checked) {
+        await notifySigninResult(result)
+
+        setRunStatus('已签到，执行结果通知已发送')
+
+        return
+      }
+
+      setManualSignin()
+
+      setRunStatus('正在打开签到入口', 'warning')
+
+      if (site.requiresCaptcha) {
+        if (site.id === 'u2' && !location.pathname.toLowerCase().endsWith('/showup.php')) {
+          sessionStorage.setItem(PENDING_ATTENDANCE_KEY, site.id)
+
+          await site.prepareSignin()
+
+          return
+        }
+
+        setRunStatus('正在识别签到验证码', 'warning')
+
+        await runCaptchaRecognition()
+
+        return
+      }
+
+      if (site.id === 'hhclub') {
+        sessionStorage.setItem(PENDING_ATTENDANCE_KEY, site.id)
+      }
+
+      await site.prepareSignin()
+    } catch (error) {
+      if (getManualSignin()) {
+        clearManualSignin()
+
+        try {
+          await notifySigninResult(null, { error: error.message })
+        } catch (notifyError) {
+          console.error('[PT Manual signin result notify]', notifyError)
+        }
+      }
+
+      setRunStatus(`立即签到失败：${error.message}`, 'error')
+
+      alert(`立即签到失败：${error.message}`)
+    }
+  }
+
   function bindEvents() {
     document.getElementById('pt-cron').addEventListener('input', updateCronDescription)
 
@@ -3593,55 +3651,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
       }
     }
 
-    document.getElementById('pt-sign-now').onclick = async () => {
-      try {
-        await saveSettings(false)
-
-        const result = await applyAttendanceCache(site.detectStatus())
-
-        updateAttendanceUI(result)
-
-        if (result.checked) {
-          await notifySigninResult(result)
-
-          setRunStatus('已签到，执行结果通知已发送')
-
-          return
-        }
-
-        setManualSignin()
-
-        setRunStatus('正在打开签到入口', 'warning')
-
-        if (site.requiresCaptcha) {
-          setRunStatus('正在识别签到验证码', 'warning')
-
-          await runCaptchaRecognition()
-
-          return
-        }
-
-        if (site.id === 'hhclub') {
-          sessionStorage.setItem(PENDING_ATTENDANCE_KEY, site.id)
-        }
-
-        await site.prepareSignin()
-      } catch (error) {
-        if (getManualSignin()) {
-          clearManualSignin()
-
-          try {
-            await notifySigninResult(null, { error: error.message })
-          } catch (notifyError) {
-            console.error('[PT Manual signin result notify]', notifyError)
-          }
-        }
-
-        setRunStatus(`立即签到失败：${error.message}`, 'error')
-
-        alert(`立即签到失败：${error.message}`)
-      }
-    }
+    document.getElementById('pt-sign-now').onclick = runSignin
   }
 
   /************************************************************
@@ -3893,15 +3903,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
     await gmSet(triggerStorageKey, triggerKey)
 
-    /*
-     * 跳转只是调度的第一步。记下待办状态，
-     * 让目标页加载后继续点击签到或识别验证码。
-     */
-    if (site.id === 'hhclub' || site.requiresCaptcha) {
-      sessionStorage.setItem(PENDING_ATTENDANCE_KEY, site.id)
-    }
-
-    location.href = site.attendanceUrl
+    await runSignin()
   }
 
   /************************************************************
