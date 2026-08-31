@@ -11,7 +11,22 @@ pnpm install
 pnpm run build
 ```
 
-构建完成后会生成 `dist/`。也可执行 `pnpm run dev` 在修改源码时自动重新构建。
+构建完成后会生成 `dist/`。
+
+### 开发环境热更新
+
+```powershell
+pnpm run dev
+```
+
+第一次启动开发模式后，需要在扩展管理页手动重新加载一次 `dist/`，让开发版运行。之后：
+
+- 修改 `src/` 会自动重新打包。
+- 修改 `public/` 会自动复制新的静态文件。
+- 扩展会自动执行 `chrome.runtime.reload()`。
+- 已打开的 HDDolby 页面会自动刷新，以加载新内容脚本。
+
+热更新仅在 `pnpm run dev` 生成的开发版中启用，`pnpm run build` 生成的正式版不会轮询构建状态。
 
 ## 安装
 

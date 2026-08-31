@@ -1,4 +1,5 @@
 import { adapters } from '../sites/index.js'
+import { watchReload } from '../shared/reload.js'
 
 ;(() => {
   const adapter = Object.values(adapters).find(item => item.hosts.includes(location.hostname))
@@ -39,4 +40,10 @@ import { adapters } from '../sites/index.js'
   }
 
   run().catch(error => console.error('[PT Extension]', error))
+
+  if (__DEV__) {
+    watchReload(() => {
+      chrome.runtime.sendMessage({ type: 'DEV_RELOAD' }).catch(() => {})
+    })
+  }
 })()

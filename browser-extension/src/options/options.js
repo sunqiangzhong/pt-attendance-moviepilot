@@ -1,5 +1,6 @@
 import { getNextRun, parseCron } from '../shared/cron.js'
 import { loadConfig, saveConfig } from '../shared/config.js'
+import { watchReload } from '../shared/reload.js'
 
 const elements = {
   siteEnabled: document.getElementById('site-enabled'),
@@ -88,3 +89,9 @@ chrome.storage.onChanged.addListener(changes => {
 })
 
 loadPage().catch(error => { elements.saveState.textContent = error.message })
+
+if (__DEV__) {
+  watchReload(() => {
+    chrome.runtime.sendMessage({ type: 'DEV_RELOAD' }).catch(() => {})
+  })
+}

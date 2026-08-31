@@ -1,9 +1,11 @@
 import { getMinuteKey, matchesCron } from '../shared/cron.js'
 import { loadConfig } from '../shared/config.js'
 import { sites } from '../sites/catalog.js'
+import { watchReload } from '../shared/reload.js'
 
 const ALARM_NAME = 'pt-scheduler'
 const TASK_TTL = 10 * 60 * 1000
+const DEV_RELOAD_KEY = 'devReloadPending'
 
 async function getStore(key, fallback) {
   const data = await chrome.storage.local.get(key)
@@ -108,6 +110,13 @@ async function getTask(siteId) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   ;(async () => {
+    if (__DEV__ && message.type === 'DEV_RELOAD') {
+      await setStore(DEV_RELOAD_KEY, true)
+      sendResponse({ ok: true })
+      setTimeout(() => chrome.runtime.reload(), 50)
+      return
+    }
+
     if (message.type === 'RUN_SITE') {
       await runSite(message.siteId)
       sendResponse({ ok: true })
@@ -168,3 +177,20 @@ chrome.runtime.onStartup.addListener(() => ensureAlarm().catch(console.error))
 chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage())
 
 ensureAlarm().catch(console.error)
+
+if (__DEV__) {
+  ;(async () => {
+    const pending = await getStore(DEV_RELOAD_KEY, false)
+    if (pending) {
+      await chrome.storage.local.remove(DEV_RELOAD_KEY)
+      const patterns = Object.values(sites).flatMap(site => site.matches)
+      const tabs = await chrome.tabs.query({ url: patterns })
+      await Promise.all(tabs.filter(tab => tab.id).map(tab => chrome.tabs.reload(tab.id)))
+    }
+
+    watchReload(async () => {
+      await setStore(DEV_RELOAD_KEY, true)
+      chrome.runtime.reload()
+    })
+  })().catch(console.error)
+}
