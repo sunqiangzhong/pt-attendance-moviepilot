@@ -2,7 +2,7 @@
 
 一个面向 Tampermonkey（油猴）的 PT 站点签到助手。脚本可在支持的 PT 站点页面中定时执行签到，通过 MoviePilot Agent 识别验证码或回答签到题目，并在签到成功后调用 MoviePilot MsgNotify 发送通知。
 
-> 当前版本：`0.10.0`
+> 当前版本：`0.10.1`
 
 ## 主要功能
 
@@ -32,7 +32,7 @@
 ## 安装
 
 1. 在浏览器中安装 [Tampermonkey](https://www.tampermonkey.net/)。
-2. [点击这里安装脚本](https://github.com/sunqiangzhong/pt-attendance-moviepilot/raw/refs/heads/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js)。
+2. [点击这里安装脚本](https://github.com/sunqiangzhong/pt-attendance-moviepilot/raw/refs/heads/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.user.js)。
 3. Tampermonkey 打开安装页后，点击“安装”。
 4. 打开任意支持的 PT 站点，右侧将出现“PT 助手”面板。
 
@@ -123,7 +123,7 @@ Cron 到期
 
 ## 项目文件
 
-- `PT浏览器签到-MoviePilot通知版.js`：Tampermonkey 主脚本。
+- `PT浏览器签到-MoviePilot通知版.user.js`：Tampermonkey 主脚本。
 - `README.md`：项目介绍和使用说明。
 
 ## 免责声明
