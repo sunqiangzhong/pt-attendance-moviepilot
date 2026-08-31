@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PT 签到助手</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">ATTENDANCE CONTROL</p>
+        <h1>PT 签到助手</h1>
+        <p class="lead">浏览器保持运行，签到页由扩展自动打开。</p>
+      </div>
+      <div class="version">EXT / 0.1.0</div>
+    </header>
+
+    <section class="grid">
+      <article class="card site-card">
+        <div class="card-head">
+          <div>
+            <span class="tag">SITE 01</span>
+            <h2>HDDolby</h2>
+          </div>
+          <label class="switch">
+            <input id="site-enabled" type="checkbox">
+            <span></span>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Cron 计划</span>
+          <input id="site-cron" value="0 8 * * *" spellcheck="false">
+          <small>分 时 日 月 周，例如每天 08:00：0 8 * * *</small>
+        </label>
+
+        <div class="readout">
+          <span>下次执行</span>
+          <strong id="next-run">--</strong>
+        </div>
+
+        <div class="result" id="site-result" data-state="idle">
+          <span class="lamp"></span>
+          <div>
+            <small>最近结果</small>
+            <strong id="result-text">暂无执行记录</strong>
+          </div>
+        </div>
+
+        <button class="btn ghost" id="run-site" type="button">立即签到</button>
+      </article>
+
+      <article class="card notify-card">
+        <div class="card-head">
+          <div>
+            <span class="tag">NOTIFY</span>
+            <h2>MoviePilot</h2>
+          </div>
+          <label class="switch">
+            <input id="mp-enabled" type="checkbox">
+            <span></span>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>MoviePilot 地址</span>
+          <input id="mp-url" placeholder="http://192.168.5.6:3000">
+        </label>
+
+        <label class="field">
+          <span>API 令牌</span>
+          <input id="mp-key" type="password" autocomplete="off">
+        </label>
+
+        <p class="note">通知只在签到完成或失败后发送，不发送“已开始”通知。</p>
+      </article>
+    </section>
+
+    <footer class="actions">
+      <p id="save-state">配置保存在当前浏览器</p>
+      <button class="btn primary" id="save" type="button">保存设置</button>
+    </footer>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "PT 签到助手",
+  "version": "0.1.0",
+  "description": "按 Cron 计划打开 PT 站点并执行签到。",
+  "permissions": ["alarms", "storage", "tabs"],
+  "host_permissions": [
+    "https://www.hddolby.com/*",
+    "https://hddolby.com/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background/service.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.hddolby.com/*", "https://hddolby.com/*"],
+      "js": ["content/runner.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["sites/*.js"],
+      "matches": ["https://www.hddolby.com/*", "https://hddolby.com/*"]
+    }
+  ],
+  "action": {
+    "default_title": "PT 签到助手"
+  },
+  "options_page": "options/index.html"
+}
