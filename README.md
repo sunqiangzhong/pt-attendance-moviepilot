@@ -125,6 +125,7 @@ Cron 到期
 
 - `PT浏览器签到-MoviePilot通知版.user.js`：Tampermonkey 主脚本。
 - `browser-extension/`：Manifest V3 浏览器扩展源码，执行 `pnpm run build` 后通过开发者模式加载其 `dist/` 目录。
+- `browser-extension/docs/site-adapter-guide.md`：新站点适配器的接入规范和验收清单。
 - `README.md`：项目介绍和使用说明。
 
 ## 免责声明

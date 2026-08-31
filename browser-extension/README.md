@@ -58,6 +58,8 @@ pnpm run dev
 
 ## 站点接入
 
+完整规范见 [`docs/site-adapter-guide.md`](docs/site-adapter-guide.md)。
+
 站点 DOM 逻辑放在 `src/sites/<site>.js`。每个适配器返回统一操作：
 
 - `success`：已完成签到。
