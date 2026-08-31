@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9
+// @version      0.9.1
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9'
+  const VERSION = '0.9.1'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -1005,8 +1005,6 @@
       detect() {
         const today = new Date().getDate()
 
-        const target = `${today}日`
-
         const items = document.querySelectorAll('#day-register .calender-sub')
 
         for (const item of items) {
@@ -1020,26 +1018,36 @@
             continue
           }
 
-          if (day.textContent.trim() !== target) {
+          const displayedDay = Number.parseInt(day.textContent.replace(/\D/g, ''), 10)
+
+          if (displayedDay !== today) {
             continue
           }
 
-          const button = item.querySelector('.checkin button')
+          const checkin = item.querySelector('.checkin')
 
-          const buttonText = button?.textContent?.trim() || ''
+          const button = checkin?.querySelector('button, input[type="button"], input[type="submit"], a') || null
+
+          const buttonText = (button?.textContent || button?.value || '').replace(/\s+/g, '').trim()
+
+          const checkinText = checkin?.textContent?.replace(/\s+/g, '').trim() || ''
+
+          const checked = /(?:已领取|已签到|领取成功)/.test(`${buttonText}${checkinText}`)
 
           const bonus = item.querySelector('.bonus-info > p')?.textContent?.trim() || ''
 
           return {
             found: true,
 
-            checked: buttonText === '已领取',
+            checked,
 
-            status: buttonText || '未签到',
+            status: checked ? '已签到' : '未签到',
 
             bonus,
 
-            element: item
+            element: item,
+
+            signInButton: button
           }
         }
 
@@ -2859,7 +2867,7 @@
         <small>签到状态</small>
 
         <strong id="pt-today-status">
-            检查中
+            未签到
         </strong>
     </div>
 
@@ -3058,7 +3066,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
     const bonus = document.getElementById('pt-bonus')
 
-    status.textContent = result.checked ? '已签到' : result.status
+    status.textContent = result.checked ? '已签到' : '未签到'
 
     bonus.textContent = result.bonus || '-'
   }
@@ -3603,6 +3611,8 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
         await site.prepareSignin()
       } catch (error) {
+        setRunStatus(`立即签到失败：${error.message}`, 'error')
+
         alert(`立即签到失败：${error.message}`)
       }
     }
@@ -3688,7 +3698,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
         return true
       }
 
-      const signInButton = result.element?.querySelector('.checkin button')
+      const signInButton = result.signInButton || result.element?.querySelector('.checkin button')
 
       if (!signInButton) {
         throw new Error('未找到 HHCLUB 今日签到按钮')
@@ -3698,7 +3708,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 
       signInButton.click()
 
-      for (let attempt = 0; attempt < 30; attempt++) {
+      for (let attempt = 0; attempt < 10; attempt++) {
         await sleep(500)
 
         result = site.detectStatus()
@@ -3712,17 +3722,25 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
         }
       }
 
-      throw new Error('等待 HHCLUB 签到成功状态超时')
+      /*
+       * HHCLUB 的签到请求可能只更新服务端，
+       * 而不更新当前日历 DOM。刷新后由 init()
+       * 重新读取服务端状态并进入成功通知流程。
+       */
+      setRunStatus('正在刷新确认 HHCLUB 签到结果', 'warning')
+
+      sessionStorage.removeItem(PENDING_ATTENDANCE_KEY)
+
+      location.reload()
+
+      return true
     } finally {
       sessionStorage.removeItem(PENDING_ATTENDANCE_KEY)
     }
   }
 
   async function completePendingCaptchaAttendance() {
-    if (
-      !site.requiresCaptcha ||
-      sessionStorage.getItem(PENDING_ATTENDANCE_KEY) !== site.id
-    ) {
+    if (!site.requiresCaptcha || sessionStorage.getItem(PENDING_ATTENDANCE_KEY) !== site.id) {
       return false
     }
 
@@ -3909,4 +3927,5 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
   }
 
   init().catch(error => console.error('[PT init]', error))
+  console.log(22)
 })()
