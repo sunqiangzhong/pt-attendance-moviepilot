@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.7
+// @version      0.9.8
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.7'
+  const VERSION = '0.9.8'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -1630,9 +1630,8 @@
           const input = getOpenCDCaptchaInput()
 
           return (
-            input
-              ?.closest('form')
-              ?.querySelector('button#ok, input#ok, button[type="submit"], input[type="submit"]') || null
+            input?.closest('form')?.querySelector('button#ok, input#ok, button[type="submit"], input[type="submit"]') ||
+            null
           )
         }
       },
@@ -2075,12 +2074,7 @@
 
     await saveSettings(false)
 
-    const button = document.getElementById('pt-ai-shot')
-
     try {
-      button.disabled = true
-      button.textContent = '🧩 获取验证码...'
-
       await site.prepareSignin()
 
       const imageUrl = await site.captcha.getImageUrl()
@@ -2112,8 +2106,6 @@
       await gmSet(getAIImageKey(), record)
 
       await refreshImageCards()
-
-      button.textContent = '🤖 AI分析中...'
 
       const response = await askMoviePilotAI(imageUrl, prompt)
 
@@ -2169,9 +2161,6 @@
       }
 
       throw error
-    } finally {
-      button.disabled = false
-      button.textContent = '🧩 验证码图片'
     }
   }
 
@@ -3092,19 +3081,6 @@
         ✍️ 立刻签到
     </button>
 
-    ${
-      site.requiresCaptcha
-        ? `
-    <button
-        id="pt-ai-shot"
-        class="pt-btn pt-ai"
-    >
-        🧩 验证码图片
-    </button>
-              `
-        : ''
-    }
-
 </div>
 
 
@@ -3666,18 +3642,6 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
         alert(`立即签到失败：${error.message}`)
       }
     }
-
-    const aiButton = document.getElementById('pt-ai-shot')
-
-    if (aiButton) {
-      aiButton.onclick = async () => {
-        try {
-          await runCaptchaRecognition()
-        } catch (error) {
-          alert(`验证码识别失败：${error.message}`)
-        }
-      }
-    }
   }
 
   /************************************************************
@@ -3995,5 +3959,5 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
   }
 
   init().catch(error => console.error('[PT init]', error))
-  console.log(22)
+  console.log(23)
 })()
