@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PT 自动签到 · MoviePilot AI
 // @namespace    https://archers.cc.cd/
-// @version      0.9.2
+// @version      0.9.3
 // @description  HHCLUB / HDDolby / HDSky / OpenCD / U2 Cron签到、MoviePilot通知与验证码识别
 // @updateURL    https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
 // @downloadURL  https://raw.githubusercontent.com/sunqiangzhong/pt-attendance-moviepilot/main/PT%E6%B5%8F%E8%A7%88%E5%99%A8%E7%AD%BE%E5%88%B0-MoviePilot%E9%80%9A%E7%9F%A5%E7%89%88.js
@@ -37,7 +37,7 @@
    * 基础配置
    ************************************************************/
 
-  const VERSION = '0.9.2'
+  const VERSION = '0.9.3'
 
   const SETTINGS_KEY = 'pt_attendance_settings_v7'
 
@@ -84,6 +84,8 @@
       agentToken: '',
 
       sessionPrefix: 'pt-attendance',
+
+      aiPrompts: {},
 
       /*
        * 卡片里可以直接修改。
@@ -239,10 +241,26 @@
     return String(url || '').replace(/\/+$/, '')
   }
 
-  function getCurrentAIPrompt() {
-    const input = document.getElementById('pt-ai-prompt')
+  function getAIImageKey() {
+    return `${LAST_AI_IMAGE_KEY}_${site.id}`
+  }
 
-    return input?.value?.trim() || CONFIG.moviePilot.aiPrompt || DEFAULT_CONFIG.moviePilot.aiPrompt
+  function getSitePrompt() {
+    return CONFIG.moviePilot.aiPrompts?.[site.id] || DEFAULT_CONFIG.moviePilot.aiPrompt
+  }
+
+  function setSitePrompt(prompt) {
+    CONFIG.moviePilot.aiPrompts = {
+      ...(CONFIG.moviePilot.aiPrompts || {}),
+
+      [site.id]: String(prompt || '').trim()
+    }
+  }
+
+  function getCurrentAIPrompt() {
+    const input = document.getElementById('pt-ai-card-prompt')
+
+    return input?.value?.trim() || getSitePrompt()
   }
 
   function isToday(timestamp) {
@@ -2051,7 +2069,7 @@
         aiUpdatedAt: Date.now()
       }
 
-      await gmSet(LAST_AI_IMAGE_KEY, record)
+      await gmSet(getAIImageKey(), record)
 
       await refreshImageCards()
 
@@ -2073,7 +2091,7 @@
         aiUpdatedAt: Date.now()
       }
 
-      await gmSet(LAST_AI_IMAGE_KEY, record)
+      await gmSet(getAIImageKey(), record)
 
       await refreshImageCards()
 
@@ -2097,10 +2115,10 @@
 
       return record
     } catch (error) {
-      const current = await gmGet(LAST_AI_IMAGE_KEY, null)
+      const current = await gmGet(getAIImageKey(), null)
 
       if (current) {
-        await gmSet(LAST_AI_IMAGE_KEY, {
+        await gmSet(getAIImageKey(), {
           ...current,
           aiStatus: 'error',
           aiResult: error.message,
@@ -3146,7 +3164,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
     const prompt = document.getElementById('pt-ai-card-prompt')
 
     if (prompt?.value != null) {
-      CONFIG.moviePilot.aiPrompt = prompt.value.trim()
+      setSitePrompt(prompt.value)
     }
 
     await gmSet(SETTINGS_KEY, CONFIG)
@@ -3167,9 +3185,9 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
       return
     }
 
-    const ai = await gmGet(LAST_AI_IMAGE_KEY, null)
+    const ai = await gmGet(getAIImageKey(), null)
 
-    renderImageCard('pt-ai-result', ai, true)
+    renderImageCard('pt-ai-result', ai?.site === site.id ? ai : null, true)
   }
 
   function renderImageCard(containerId, image, isAI) {
@@ -3198,7 +3216,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
     <textarea
         id="pt-ai-card-prompt"
         class="pt-ai-card-prompt"
-    >${escapeHtml(CONFIG.moviePilot.aiPrompt || '')}</textarea>
+    >${escapeHtml(site.captcha?.aiPrompt || getSitePrompt())}</textarea>
 
     <div class="pt-ai-card-actions">
 
@@ -3272,7 +3290,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
 <textarea
     id="pt-ai-card-prompt"
     class="pt-ai-card-prompt"
->${escapeHtml(image.aiPrompt || CONFIG.moviePilot.aiPrompt || '')}</textarea>
+>${escapeHtml(image.aiPrompt || getSitePrompt())}</textarea>
 
 <div class="pt-ai-card-actions">
 
@@ -3381,7 +3399,7 @@ ${site.requiresCaptcha ? '<div id="pt-ai-result"></div>' : ''}
           return
         }
 
-        CONFIG.moviePilot.aiPrompt = textarea.value.trim()
+        setSitePrompt(textarea.value)
 
         await gmSet(SETTINGS_KEY, CONFIG)
 
